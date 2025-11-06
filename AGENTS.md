@@ -20,5 +20,6 @@
 - 安装ROS2 Humble或其他兼容版本
 - 配置ODrive硬件接口和相关依赖
 - 确保网络连接允许SSH访问和ROS2通信
+- **Shell环境**：远程服务器使用zsh shell，请注意命令语法兼容性。加载ROS环境时使用 `source /opt/ros/humble/setup.zsh`
 
 请在部署前确保远程服务器环境已正确配置。

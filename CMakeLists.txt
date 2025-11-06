@@ -45,6 +45,11 @@ target_link_libraries(balance_controller
   yaml-cpp
 )
 
+target_include_directories(balance_controller PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
 pluginlib_export_plugin_description_file(controller_interface balance_controller.xml)
 
 install(TARGETS balance_controller
