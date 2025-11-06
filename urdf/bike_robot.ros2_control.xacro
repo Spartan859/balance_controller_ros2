@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="bike_robot">
+
+  <xacro:include filename="$(find balance_controller_ros2)/urdf/bike_robot.urdf" />
 
   <xacro:include filename="$(find odrive_demo_description)/urdf/odrive.ros2_control.xacro" />
 
