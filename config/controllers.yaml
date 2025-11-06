@@ -1,0 +1,15 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 500  # Hz
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    balance_controller:
+      type: balance_controller/BalanceController
+
+balance_controller:
+  ros__parameters:
+    params_file: "$(find balance_controller_ros2)/config/params.yaml"
+    drive_joint_name: "drive_joint"
+    flywheel_joint_name: "flywheel_joint"

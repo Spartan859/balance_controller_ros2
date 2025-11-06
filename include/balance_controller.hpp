@@ -1,10 +1,14 @@
 #pragma once
 
+#include <controller_interface/controller_interface.hpp>
+#include <hardware_interface/types/hardware_interface_type_values.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_lifecycle/state.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <std_msgs/msg/float64.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <servo_rs485_ros2/srv/set_angle.hpp>
+#include <realtime_tools/realtime_buffer.h>
 
 #include <yaml-cpp/yaml.h>
 #include <ament_index_cpp/get_package_share_directory.hpp>
@@ -13,30 +17,6 @@
 #include <memory>
 #include <string>
 #include <mutex>
-#include <optional>
-
-// 简单串口封装，用于和 ODrive ASCII 接口通信
-class OdriveSerial {
-public:
-  explicit OdriveSerial(const std::string &port = "/dev/ttyACM0", int baud = 115200);
-  ~OdriveSerial();
-
-  bool is_ready() const { return ready_; }
-  bool set_state(int axis, int state);
-  bool clear_errors(int axis);
-  bool set_velocity(int axis, float vel);
-  bool get_velocity(int axis, float &vel_out);
-
-private:
-  bool write_line(const std::string &cmd);
-  bool read_response(std::string &out, int timeout_ms = 50);
-
-  int fd_ = -1;
-  bool ready_ = false;
-  std::string port_;
-  int baud_;
-  mutable std::mutex io_mutex_;
-};
 
 // PID 结构体
 struct PIDController {
@@ -55,21 +35,39 @@ struct PIDController {
   }
 };
 
-class BikeControllerNode : public rclcpp::Node {
+namespace balance_controller
+{
+class BalanceController : public controller_interface::ControllerInterface
+{
 public:
-  BikeControllerNode();
-  ~BikeControllerNode();
+  BalanceController();
+
+  controller_interface::InterfaceConfiguration command_interface_configuration() const override;
+
+  controller_interface::InterfaceConfiguration state_interface_configuration() const override;
+
+  controller_interface::return_type update(
+    const rclcpp::Time & time, const rclcpp::Duration & period) override;
+
+  controller_interface::CallbackReturn on_init() override;
+
+  controller_interface::CallbackReturn on_configure(
+    const rclcpp_lifecycle::State & previous_state) override;
+
+  controller_interface::CallbackReturn on_activate(
+    const rclcpp_lifecycle::State & previous_state) override;
+
+  controller_interface::CallbackReturn on_deactivate(
+    const rclcpp_lifecycle::State & previous_state) override;
 
 private:
   // 回调
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
   void servo_angle_callback(const std_msgs::msg::Float64::SharedPtr msg);
   void cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg);
-  void control_loop();
 
   // 辅助
   void initialize_parameters();
-  void initialize_odrive();
   void set_drive_velocity(float velocity);
   void stop_all_motors();
   double get_roll_from_quaternion(const geometry_msgs::msg::Quaternion &q);
@@ -82,14 +80,6 @@ private:
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr servo_angle_sub_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
   rclcpp::Client<servo_rs485_ros2::srv::SetAngle>::SharedPtr servo_set_angle_client_;
-  rclcpp::TimerBase::SharedPtr control_timer_;
-
-  // ODrive 控制
-  std::unique_ptr<OdriveSerial> odrive_serial_;
-  int axis_drive_id_;
-  int axis_flywheel_id_;
-  std::string odrive_port_;
-  int odrive_baud_;
 
   // 状态
   double current_roll_ = 0.0;
@@ -119,4 +109,10 @@ private:
   double safety_timeout_s_;
   double max_roll_angle_for_safety_;
   std::string params_file_;
+
+  // 硬件接口
+  std::string drive_joint_name_;
+  std::string flywheel_joint_name_;
+  std::vector<std::string> joint_names_;
 };
+}  // namespace balance_controller
