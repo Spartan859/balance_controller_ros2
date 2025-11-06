@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:include filename="$(find odrive_ros2_control)/odrive_demo_description/urdf/odrive.ros2_control.xacro" />
+  <xacro:include filename="$(find odrive_demo_description)/urdf/odrive.ros2_control.xacro" />
 
   <xacro:odrive_ros2_control name="bike_robot" serial_number="000000000000" joint0_name="drive_joint" joint1_name="flywheel_joint" />
 
