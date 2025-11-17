@@ -7,8 +7,8 @@ controller_manager:
       type: joint_state_broadcaster/JointStateBroadcaster
 
     balance_controller:
-      # Use fully-qualified C++ class name (plugin description uses :: namespace)
-      type: balance_controller_ros2::BalanceController
+      # Use plugin name as listed by controller_manager (slash form)
+      type: balance_controller_ros2/BalanceController
       drive_joint_name: joint0
       flywheel_joint_name: joint1
       angle_kp: 350.0
