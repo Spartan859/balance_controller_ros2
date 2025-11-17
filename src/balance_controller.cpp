@@ -29,6 +29,9 @@ controller_interface::CallbackReturn BalanceController::on_init() {
   node->declare_parameter("middle_angle_recitfy_limit_deg", 3.0);
   node->declare_parameter("servo_center_deg", -10.0);
   node->declare_parameter("servo_middle_range", 2.0);
+  // Fetch initial joint names so interface configuration has them
+  drive_joint_name_ = node->get_parameter("drive_joint_name").as_string();
+  flywheel_joint_name_ = node->get_parameter("flywheel_joint_name").as_string();
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
@@ -150,14 +153,14 @@ double BalanceController::computeFlywheelZeroPID(double current_speed) {
   return error * (flywheel_zero_pid_.kp / 10.0) + flywheel_zero_pid_.integral * (flywheel_zero_pid_.ki / 1000.0);
 }
 
-controller_interface::return_type BalanceController::update() {
+controller_interface::return_type BalanceController::update(const rclcpp::Time & time, const rclcpp::Duration & period) {
   ++loop_counter_;
   // IMU timeout safety (1s)
   if (!last_imu_stamp_.nanoseconds()) {
     return controller_interface::return_type::OK;
   }
-  auto now = get_node()->now();
-  if ((now - last_imu_stamp_).seconds() > 1.0) {
+  // Use provided time instead of creating a new one for deterministic behavior
+  if ((time - last_imu_stamp_).seconds() > 1.0) {
     // stop outputs
     for (auto & cmd : command_interfaces_) cmd.set_value(0.0);
     return controller_interface::return_type::OK;
