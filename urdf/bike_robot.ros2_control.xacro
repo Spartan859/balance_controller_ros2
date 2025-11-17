@@ -15,22 +15,11 @@
   </joint>
   <link name="flywheel_link" />
 
-  <!-- ODrive hardware macro expected from odrive_ros2_control demo description -->
-  <!-- Adjust to actual macro path if different -->
-  <ros2_control name="BikeOdrive" type="system">
-    <hardware>
-      <!-- Per pluginlib list, correct plugin name is odrive_hardware_interface/ODriveHardwareInterface -->
-      <plugin>odrive_hardware_interface/ODriveHardwareInterface</plugin>
-      <!-- Optional: set parameters like serial_number or config path here if required by your setup -->
-      <!-- <param name="serial_number">auto</param> -->
-    </hardware>
-    <joint name="joint0">
-      <command_interface name="velocity" />
-      <state_interface name="velocity" />
-    </joint>
-    <joint name="joint1">
-      <command_interface name="velocity" />
-      <state_interface name="velocity" />
-    </joint>
-  </ros2_control>
+  <!-- Use official odrive macro for ros2_control hardware wiring -->
+  <xacro:include filename="$(find odrive_demo_description)/urdf/odrive.ros2_control.xacro" />
+
+  <xacro:odrive_ros2_control
+    name="BikeOdrive"
+    joint0_name="joint0"
+    joint1_name="joint1" />
 </robot>
