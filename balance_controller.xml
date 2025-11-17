@@ -1,7 +1,0 @@
-<library path="balance_controller">
-  <class name="balance_controller/BalanceController" type="balance_controller::BalanceController" base_class_type="controller_interface::ControllerInterface">
-    <description>
-      Balance controller for bike using ODrive.
-    </description>
-  </class>
-</library>
