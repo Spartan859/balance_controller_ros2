@@ -162,7 +162,7 @@ double BalanceController::computeFlywheelZeroPID(double current_speed) {
 }
 
 controller_interface::return_type BalanceController::update(const rclcpp::Time & time, const rclcpp::Duration & period) {
-  RCLCPP_INFO(get_node()->get_logger(), "BalanceController update called.");
+  // RCLCPP_INFO(get_node()->get_logger(), "BalanceController update called.");
   ++loop_counter_;
   // IMU timeout safety (1s)
   if (!last_imu_stamp_.nanoseconds()) {
