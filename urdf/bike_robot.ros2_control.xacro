@@ -19,7 +19,10 @@
   <!-- Adjust to actual macro path if different -->
   <ros2_control name="BikeOdrive" type="system">
     <hardware>
-      <plugin>odrive_ros2_control/OdriveHardwareInterface</plugin>
+      <!-- Per pluginlib list, correct plugin name is odrive_hardware_interface/ODriveHardwareInterface -->
+      <plugin>odrive_hardware_interface/ODriveHardwareInterface</plugin>
+      <!-- Optional: set parameters like serial_number or config path here if required by your setup -->
+      <!-- <param name="serial_number">auto</param> -->
     </hardware>
     <joint name="joint0">
       <command_interface name="velocity" />
