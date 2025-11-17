@@ -2,6 +2,9 @@
 #include <hardware_interface/types/hardware_interface_type_values.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <cmath>
+#include <sstream>
+#include <iomanip>
+#include <algorithm>
 
 namespace balance_controller_ros2 {
 
@@ -29,6 +32,9 @@ controller_interface::CallbackReturn BalanceController::on_init() {
   node->declare_parameter("middle_angle_recitfy_limit_deg", 3.0);
   node->declare_parameter("servo_center_deg", -10.0);
   node->declare_parameter("servo_middle_range", 2.0);
+  // Logging params
+  node->declare_parameter("log_enable", true);
+  node->declare_parameter("log_hz", 10.0);
   // Fetch initial joint names so interface configuration has them
   drive_joint_name_ = node->get_parameter("drive_joint_name").as_string();
   flywheel_joint_name_ = node->get_parameter("flywheel_joint_name").as_string();
@@ -58,6 +64,8 @@ controller_interface::CallbackReturn BalanceController::on_configure(const rclcp
   middle_angle_recitfy_limit_deg_ = node->get_parameter("middle_angle_recitfy_limit_deg").as_double();
   servo_center_deg_ = node->get_parameter("servo_center_deg").as_double();
   servo_middle_range_ = node->get_parameter("servo_middle_range").as_double();
+  log_enable_ = node->get_parameter("log_enable").as_bool();
+  log_hz_ = node->get_parameter("log_hz").as_double();
   machine_middle_angle_ = machine_middle_angle_init_;
 
   // Subscribers
@@ -192,6 +200,7 @@ controller_interface::return_type BalanceController::update(const rclcpp::Time &
     }
     speed_bias = std::abs(drive_speed) * std::abs(drive_speed) * bike_speed_scale_deg_ * speed_bias_direction;
     turn_bias = (last_servo_angle_ - servo_center_deg_) * bike_turn_scale_deg_;
+    last_speed_bias_ = speed_bias;
   }
 
   // Middle loop every ~30ms (mod 15)
@@ -203,6 +212,7 @@ controller_interface::return_type BalanceController::update(const rclcpp::Time &
                          machine_middle_angle_ - middle_angle_recitfy_limit_deg_,
                          machine_middle_angle_ + middle_angle_recitfy_limit_deg_);
     pwm_x = computeAnglePID(last_roll_deg_, dynamic_zero, last_roll_gyro_degps_);
+    last_dynamic_zero_ = dynamic_zero;
   }
 
   // Inner loop every cycle (angular velocity PID)
@@ -225,6 +235,21 @@ controller_interface::return_type BalanceController::update(const rclcpp::Time &
   command_interfaces_[0].set_value(final_flywheel_speed);
   command_interfaces_[1].set_value(0.0); // march velocity integration TBD
   last_flywheel_command_ = final_flywheel_speed;
+  last_final_flywheel_speed_ = final_flywheel_speed;
+
+  // Throttled real-time style log (controlled by params)
+  if (log_enable_ && log_hz_ > 0.0) {
+    const uint64_t period_ms = static_cast<uint64_t>(std::max(1.0, 1000.0 / log_hz_));
+    std::ostringstream ss;
+    ss.setf(std::ios::fixed);
+    ss << "steer=" << std::setw(4) << std::setprecision(1) << last_servo_angle_;
+    ss << ", roll=" << std::setw(7) << std::setprecision(2) << last_roll_deg_ << "\u00B0";
+    ss << ", dy_zero=" << std::setw(5) << std::setprecision(2) << last_dynamic_zero_ << "\u00B0";
+    ss << ", spd_bias=" << std::setw(7) << std::setprecision(4) << last_speed_bias_;
+    ss << ", tgt_vel=" << std::setw(7) << std::setprecision(2) << last_final_flywheel_speed_;
+    ss << ", fw_s=" << std::setw(6) << std::setprecision(1) << flywheel_zero_pid_.integral;
+    RCLCPP_INFO_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(), period_ms, "%s", ss.str().c_str());
+  }
 
   return controller_interface::return_type::OK;
 }

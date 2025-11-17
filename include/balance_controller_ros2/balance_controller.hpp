@@ -53,6 +53,9 @@ private:
   double middle_angle_recitfy_limit_deg_{3.0};
   double servo_center_deg_{0.0};
   double servo_middle_range_{2.0};
+  // Logging controls
+  bool log_enable_{true};
+  double log_hz_{10.0};
 
   // PID states
   PIDState angle_pid_{};      // outer (angle)
@@ -67,6 +70,10 @@ private:
   double last_drive_speed_{0.0};
   double last_servo_angle_{0.0};
   rclcpp::Time last_imu_stamp_{};
+  // Debug snapshot
+  double last_dynamic_zero_{0.0};
+  double last_final_flywheel_speed_{0.0};
+  double last_speed_bias_{0.0};
 
   // Command state
   double last_flywheel_command_{0.0};
