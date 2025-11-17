@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="bike_robot">
-  <!-- Minimal links/joints -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="bike_robot_mock">
   <link name="base_link" />
   <joint name="joint0" type="continuous">
     <parent link="base_link" />
@@ -15,11 +14,10 @@
   </joint>
   <link name="flywheel_link" />
 
-  <!-- ODrive hardware macro expected from odrive_ros2_control demo description -->
-  <!-- Adjust to actual macro path if different -->
-  <ros2_control name="BikeOdrive" type="system">
+  <ros2_control name="MockBike" type="system">
     <hardware>
-      <plugin>odrive_ros2_control/OdriveHardwareInterface</plugin>
+      <plugin>mock_components/GenericSystem</plugin>
+      <param name="update_rate">500</param>
     </hardware>
     <joint name="joint0">
       <command_interface name="velocity" />

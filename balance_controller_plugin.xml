@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<library path="balance_controller">
+  <class type="balance_controller_ros2::BalanceController" base_class_type="controller_interface::ControllerInterface">
+    <description>Self-balancing bicycle controller (flywheel + drive), triple-loop PID.</description>
+  </class>
+</library>
