@@ -6,6 +6,12 @@ controller_manager:
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
+    # Optional: manual velocity test controller (disabled by default until spawned)
+    velocity_controller:
+      type: velocity_controllers/JointGroupVelocityController
+      joints:
+        - joint1  # flywheel joint
+
     balance_controller:
       # Use plugin name as listed by controller_manager (slash form)
       type: balance_controller_ros2/BalanceController

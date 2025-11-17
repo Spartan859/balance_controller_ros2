@@ -162,6 +162,7 @@ double BalanceController::computeFlywheelZeroPID(double current_speed) {
 }
 
 controller_interface::return_type BalanceController::update(const rclcpp::Time & time, const rclcpp::Duration & period) {
+  RCLCPP_INFO(get_node()->get_logger(), "BalanceController update called.");
   ++loop_counter_;
   // IMU timeout safety (1s)
   if (!last_imu_stamp_.nanoseconds()) {
@@ -174,9 +175,13 @@ controller_interface::return_type BalanceController::update(const rclcpp::Time &
     return controller_interface::return_type::OK;
   }
 
-  // Read flywheel & drive speeds from state interfaces
-  double flywheel_speed = state_interfaces_[0].get_value();
-  double drive_speed = state_interfaces_[1].get_value();
+  // Read flywheel & drive speeds from state interfaces (SI: rad/s)
+  const double rad_per_turn = 2.0 * M_PI;
+  double flywheel_speed_si = state_interfaces_[0].get_value();      // rad/s
+  double drive_speed_si = state_interfaces_[1].get_value();          // rad/s
+  // Convert to controller's internal unit (turn/s) to match legacy Python tuning
+  double flywheel_speed = flywheel_speed_si / rad_per_turn;          // turn/s
+  double drive_speed = drive_speed_si / rad_per_turn;                // turn/s
   last_drive_speed_ = drive_speed;
 
   // Slow loop every ~160ms (assuming 500Hz -> 80 cycles, approximate with modulo 80)
@@ -231,8 +236,8 @@ controller_interface::return_type BalanceController::update(const rclcpp::Time &
     flywheel_zero_pid_.integral = 0.0;
   }
 
-  // Write commands: flywheel first, drive left unchanged (0 for now)
-  command_interfaces_[0].set_value(final_flywheel_speed);
+  // Write commands: convert controller unit (turn/s) back to SI (rad/s)
+  command_interfaces_[0].set_value(final_flywheel_speed * rad_per_turn);
   command_interfaces_[1].set_value(0.0); // march velocity integration TBD
   last_flywheel_command_ = final_flywheel_speed;
   last_final_flywheel_speed_ = final_flywheel_speed;
