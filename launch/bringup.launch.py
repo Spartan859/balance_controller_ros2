@@ -27,6 +27,7 @@ def launch_setup(context, *args, **kwargs):
         Node(
             package='controller_manager',
             executable='ros2_control_node',
+            name='controller_manager',  # Match root key in controllers.yaml
             parameters=[robot_description, controllers_path],
             output='screen'
         ),
