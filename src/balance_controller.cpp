@@ -196,6 +196,8 @@ controller_interface::return_type BalanceController::update(const rclcpp::Time &
   // Slow loop every ~160ms (assuming 500Hz -> 80 cycles, approximate with modulo 80)
   static double pwm_accel = 0.0;
   bool slow_loop = (loop_counter_ % 80) == 0;
+  bool middle_loop = (loop_counter_ % 15) == 0;
+
   if (slow_loop) {
     pwm_accel = computeFlywheelZeroPID(flywheel_speed);
   }
@@ -203,7 +205,7 @@ controller_interface::return_type BalanceController::update(const rclcpp::Time &
   // Turn & speed bias every slow loop
   static double turn_bias = 0.0;
   static double speed_bias = 0.0;
-  if (slow_loop) {
+  if (middle_loop) {
     double speed_bias_direction = 0.0;
     if (std::abs(last_servo_angle_ - servo_center_deg_) < servo_middle_range_) {
       speed_bias_direction = 0.0;
@@ -219,7 +221,6 @@ controller_interface::return_type BalanceController::update(const rclcpp::Time &
 
   // Middle loop every ~30ms (mod 15)
   static double pwm_x = 0.0;
-  bool middle_loop = (loop_counter_ % 15) == 0;
   if (middle_loop) {
     double dynamic_zero = machine_middle_angle_ + turn_bias + speed_bias + pwm_accel;
     dynamic_zero = clamp(dynamic_zero,

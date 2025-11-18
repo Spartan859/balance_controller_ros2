@@ -28,9 +28,9 @@ balance_controller:
     flywheel_speed_integral_limit_min: -400.0
     flywheel_speed_integral_limit_max: 400.0
     flywheel_speed_limit: 25.0
-    flywheel_accel_limit: 15.0
+    flywheel_accel_limit: 8.0
     roll_diff_limit: 0.1
-    machine_middle_angle_init: -2.2
+    machine_middle_angle_init: -1.9
     bike_turn_scale_deg: 0.057
     bike_speed_scale_deg: 0.14
     middle_angle_recitfy_limit_deg: 3.0
