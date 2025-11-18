@@ -56,6 +56,11 @@ private:
   // Logging controls
   bool log_enable_{true};
   double log_hz_{10.0};
+  // Machine middle angle adjustment
+  double machine_middle_angle_adjust_interval_{10.0};
+  rclcpp::Time last_adjust_time_;
+  double pwm_accel_sum_{0.0};
+  int pwm_accel_count_{0};
 
   // PID states
   PIDState angle_pid_{};      // outer (angle)

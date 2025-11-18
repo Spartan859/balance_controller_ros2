@@ -36,3 +36,5 @@ balance_controller:
     middle_angle_recitfy_limit_deg: 3.0
     servo_center_deg: 8.0
     servo_middle_range: 2.0
+    # Machine middle angle adjustment
+    machine_middle_angle_adjust_interval: 10.0
