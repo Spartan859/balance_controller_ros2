@@ -60,18 +60,17 @@ def launch_setup(context, *args, **kwargs):
         Node(
             package='controller_manager',
             executable='ros2_control_node',
-            name='controller_manager',  # ensure YAML root matches
             parameters=[robot_description, controllers_path],
             output='screen'
         ),
         Node(
             package='controller_manager', executable='spawner',
-            arguments=['joint_state_broadcaster', '--controller-manager', '/controller_manager'],
+            arguments=['joint_state_broadcaster', '-c', '/controller_manager'],
             output='screen'
         ),
         Node(
             package='controller_manager', executable='spawner',
-            arguments=['balance_controller', '--controller-manager', '/controller_manager'],
+            arguments=['balance_controller', '-c', '/controller_manager'],
             output='screen'
         ),
     ]
