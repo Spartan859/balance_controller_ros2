@@ -55,6 +55,8 @@ controller_interface::CallbackReturn BalanceController::on_configure(const rclcp
   flywheel_zero_pid_.ki = node->get_parameter("flywheel_speed_ki").as_double();
   flywheel_zero_integral_limit_min_ = node->get_parameter("flywheel_speed_integral_limit_min").as_double();
   flywheel_zero_integral_limit_max_ = node->get_parameter("flywheel_speed_integral_limit_max").as_double();
+  // log node->get_parameter("flywheel_speed_integral_limit_max").as_double();
+  RCLCPP_INFO(node->get_logger(), "flywheel_speed_integral_limit_max_: %f", flywheel_zero_integral_limit_max_);
   flywheel_speed_limit_ = node->get_parameter("flywheel_speed_limit").as_double();
   flywheel_accel_limit_ = node->get_parameter("flywheel_accel_limit").as_double();
   roll_diff_limit_ = node->get_parameter("roll_diff_limit").as_double();
