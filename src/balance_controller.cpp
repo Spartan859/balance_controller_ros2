@@ -35,8 +35,7 @@ controller_interface::CallbackReturn BalanceController::on_init() {
     {"servo_center_deg", rclcpp::ParameterValue(-10.0)},
     {"servo_middle_range", rclcpp::ParameterValue(2.0)},
     {"log_enable", rclcpp::ParameterValue(true)},
-    {"log_hz", rclcpp::ParameterValue(10.0)},
-    {"machine_middle_angle_adjust_interval", rclcpp::ParameterValue(10.0)}
+    {"log_hz", rclcpp::ParameterValue(10.0)}
   };
   for (const auto & kv : default_params) {
     if (!node->has_parameter(kv.first)) {
@@ -76,7 +75,6 @@ controller_interface::CallbackReturn BalanceController::on_configure(const rclcp
   servo_middle_range_ = node->get_parameter("servo_middle_range").as_double();
   log_enable_ = node->get_parameter("log_enable").as_bool();
   log_hz_ = node->get_parameter("log_hz").as_double();
-  machine_middle_angle_adjust_interval_ = node->get_parameter("machine_middle_angle_adjust_interval").as_double();
   machine_middle_angle_ = machine_middle_angle_init_;
 
   // Subscribers
@@ -97,10 +95,6 @@ controller_interface::CallbackReturn BalanceController::on_activate(const rclcpp
   flywheel_zero_pid_.integral = 0.0;
   last_flywheel_command_ = 0.0;
   loop_counter_ = 0;
-  // Initialize adjustment mechanism
-  last_adjust_time_ = get_node()->now();
-  pwm_accel_sum_ = 0.0;
-  pwm_accel_count_ = 0;
   RCLCPP_INFO(get_node()->get_logger(), "BalanceController activated.");
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -204,9 +198,6 @@ controller_interface::return_type BalanceController::update(const rclcpp::Time &
   bool slow_loop = (loop_counter_ % 80) == 0;
   if (slow_loop) {
     pwm_accel = computeFlywheelZeroPID(flywheel_speed);
-    // Accumulate for average calculation
-    pwm_accel_sum_ += pwm_accel;
-    pwm_accel_count_++;
   }
 
   // Turn & speed bias every slow loop
@@ -272,17 +263,6 @@ controller_interface::return_type BalanceController::update(const rclcpp::Time &
     ss << ", tgt_vel=" << std::setw(7) << std::setprecision(2) << last_final_flywheel_speed_;
     ss << ", fw_s=" << std::setw(6) << std::setprecision(1) << flywheel_zero_pid_.integral;
     RCLCPP_INFO_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(), period_ms, "%s", ss.str().c_str());
-  }
-
-  // Machine middle angle adjustment mechanism
-  if ((time - last_adjust_time_).seconds() >= machine_middle_angle_adjust_interval_ && pwm_accel_count_ > 0) {
-    double avg_pwm_accel = pwm_accel_sum_ / pwm_accel_count_;
-    machine_middle_angle_ += avg_pwm_accel;
-    flywheel_zero_pid_.integral = 0.0;
-    RCLCPP_INFO(get_node()->get_logger(), "Adjusted machine_middle_angle_ by avg pwm_accel: %f, new value: %f", avg_pwm_accel, machine_middle_angle_);
-    last_adjust_time_ = time;
-    pwm_accel_sum_ = 0.0;
-    pwm_accel_count_ = 0;
   }
 
   return controller_interface::return_type::OK;
