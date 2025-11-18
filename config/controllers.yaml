@@ -6,36 +6,33 @@ controller_manager:
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
-    # Optional: manual velocity test controller (disabled by default until spawned)
-    velocity_controller:
-      type: velocity_controllers/JointGroupVelocityController
-      joints:
-        - joint1  # flywheel joint
-
     balance_controller:
       # Use plugin name as listed by controller_manager (slash form)
       type: balance_controller_ros2/BalanceController
-      drive_joint_name: joint0
-      flywheel_joint_name: joint1
-      # Logging controls
-      log_enable: true
-      log_hz: 10.0
-      angle_kp: 350.0
-      angle_ki: 0.0
-      angle_kd: 0.7
-      angle_v_kp: 0.45
-      angle_v_ki: 0.0
-      angle_v_kd: 0.1
-      flywheel_speed_kp: 0.1
-      flywheel_speed_ki: 0.45
-      flywheel_speed_integral_limit_min: -400.0
-      flywheel_speed_integral_limit_max: 400.0
-      flywheel_speed_limit: 25.0
-      flywheel_accel_limit: 15.0
-      roll_diff_limit: 0.1
-      machine_middle_angle_init: -2.2
-      bike_turn_scale_deg: 0.057
-      bike_speed_scale_deg: 0.14
-      middle_angle_recitfy_limit_deg: 3.0
-      servo_center_deg: 8
-      servo_middle_range: 2.0
+
+balance_controller:
+  ros__parameters:
+    drive_joint_name: joint0
+    flywheel_joint_name: joint1
+    # Logging controls
+    log_enable: true
+    log_hz: 10.0
+    angle_kp: 350.0
+    angle_ki: 0.0
+    angle_kd: 0.7
+    angle_v_kp: 0.45
+    angle_v_ki: 0.0
+    angle_v_kd: 0.1
+    flywheel_speed_kp: 0.1
+    flywheel_speed_ki: 0.45
+    flywheel_speed_integral_limit_min: -400.0
+    flywheel_speed_integral_limit_max: 400.0
+    flywheel_speed_limit: 25.0
+    flywheel_accel_limit: 15.0
+    roll_diff_limit: 0.1
+    machine_middle_angle_init: -2.2
+    bike_turn_scale_deg: 0.057
+    bike_speed_scale_deg: 0.14
+    middle_angle_recitfy_limit_deg: 3.0
+    servo_center_deg: 8.0
+    servo_middle_range: 2.0

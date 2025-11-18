@@ -11,30 +11,37 @@ namespace balance_controller_ros2 {
 controller_interface::CallbackReturn BalanceController::on_init() {
   // Declare parameters
   auto node = get_node();
-  node->declare_parameter("drive_joint_name", std::string("joint0"));
-  node->declare_parameter("flywheel_joint_name", std::string("joint1"));
-  node->declare_parameter("angle_kp", 350.0);
-  node->declare_parameter("angle_ki", 0.0);
-  node->declare_parameter("angle_kd", 0.7);
-  node->declare_parameter("angle_v_kp", 0.5);
-  node->declare_parameter("angle_v_ki", 0.0);
-  node->declare_parameter("angle_v_kd", 0.1);
-  node->declare_parameter("flywheel_speed_kp", 0.1);
-  node->declare_parameter("flywheel_speed_ki", 0.45);
-  node->declare_parameter("flywheel_speed_integral_limit_min", -200.0);
-  node->declare_parameter("flywheel_speed_integral_limit_max", 200.0);
-  node->declare_parameter("flywheel_speed_limit", 20.0);
-  node->declare_parameter("flywheel_accel_limit", 5.0);
-  node->declare_parameter("roll_diff_limit", 0.1);
-  node->declare_parameter("machine_middle_angle_init", -2.11);
-  node->declare_parameter("bike_turn_scale_deg", 0.06);
-  node->declare_parameter("bike_speed_scale_deg", 0.002);
-  node->declare_parameter("middle_angle_recitfy_limit_deg", 3.0);
-  node->declare_parameter("servo_center_deg", -10.0);
-  node->declare_parameter("servo_middle_range", 2.0);
-  // Logging params
-  node->declare_parameter("log_enable", true);
-  node->declare_parameter("log_hz", 10.0);
+  // Declare parameters only if not already declared, using a map and loop
+  const std::map<std::string, rclcpp::ParameterValue> default_params = {
+    {"drive_joint_name", rclcpp::ParameterValue(std::string("joint0"))},
+    {"flywheel_joint_name", rclcpp::ParameterValue(std::string("joint1"))},
+    {"angle_kp", rclcpp::ParameterValue(350.0)},
+    {"angle_ki", rclcpp::ParameterValue(0.0)},
+    {"angle_kd", rclcpp::ParameterValue(0.7)},
+    {"angle_v_kp", rclcpp::ParameterValue(0.5)},
+    {"angle_v_ki", rclcpp::ParameterValue(0.0)},
+    {"angle_v_kd", rclcpp::ParameterValue(0.1)},
+    {"flywheel_speed_kp", rclcpp::ParameterValue(0.1)},
+    {"flywheel_speed_ki", rclcpp::ParameterValue(0.45)},
+    {"flywheel_speed_integral_limit_min", rclcpp::ParameterValue(-200.0)},
+    {"flywheel_speed_integral_limit_max", rclcpp::ParameterValue(200.0)},
+    {"flywheel_speed_limit", rclcpp::ParameterValue(20.0)},
+    {"flywheel_accel_limit", rclcpp::ParameterValue(5.0)},
+    {"roll_diff_limit", rclcpp::ParameterValue(0.1)},
+    {"machine_middle_angle_init", rclcpp::ParameterValue(-2.11)},
+    {"bike_turn_scale_deg", rclcpp::ParameterValue(0.06)},
+    {"bike_speed_scale_deg", rclcpp::ParameterValue(0.002)},
+    {"middle_angle_recitfy_limit_deg", rclcpp::ParameterValue(3.0)},
+    {"servo_center_deg", rclcpp::ParameterValue(-10.0)},
+    {"servo_middle_range", rclcpp::ParameterValue(2.0)},
+    {"log_enable", rclcpp::ParameterValue(true)},
+    {"log_hz", rclcpp::ParameterValue(10.0)}
+  };
+  for (const auto & kv : default_params) {
+    if (!node->has_parameter(kv.first)) {
+      node->declare_parameter(kv.first, kv.second);
+    }
+  }
   // Fetch initial joint names so interface configuration has them
   drive_joint_name_ = node->get_parameter("drive_joint_name").as_string();
   flywheel_joint_name_ = node->get_parameter("flywheel_joint_name").as_string();
