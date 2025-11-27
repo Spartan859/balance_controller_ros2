@@ -13,6 +13,7 @@ def launch_setup(context, *args, **kwargs):
     servo_id = LaunchConfiguration('servo_id').perform(context)
     imu_port = LaunchConfiguration('imu_port').perform(context)
     imu_baud = LaunchConfiguration('imu_baud').perform(context)
+    servo_publish_interval_ms = LaunchConfiguration('servo_publish_interval_ms').perform(context)
     pkg_share = get_package_share_directory('balance_controller_ros2')
     odrive_xacro = os.path.join(pkg_share, 'urdf', 'bike_robot.ros2_control.xacro')
     mock_xacro = os.path.join(pkg_share, 'urdf', 'bike_robot_mock.ros2_control.xacro')
@@ -32,6 +33,7 @@ def launch_setup(context, *args, **kwargs):
                 {'port': servo_port},
                 {'servo_id': int(servo_id)},
                 {'baudrate': 115200},
+                {'publish_interval_ms': int(servo_publish_interval_ms)},
             ]
         ),
         # IMU nodes (serial reader + optional processing node)
@@ -88,11 +90,14 @@ def generate_launch_description():
                                          description='IMU 串口设备')
     imu_baud_arg = DeclareLaunchArgument('imu_baud', default_value='115200',
                                          description='IMU 波特率')
+    servo_publish_interval_arg = DeclareLaunchArgument('servo_publish_interval_ms', default_value='30',
+                                                      description='舵机角度发布间隔 (毫秒)')
     return LaunchDescription([
         use_mock_arg,
         servo_port_arg,
         servo_id_arg,
         imu_port_arg,
         imu_baud_arg,
+        servo_publish_interval_arg,
         OpaqueFunction(function=launch_setup)
     ])
