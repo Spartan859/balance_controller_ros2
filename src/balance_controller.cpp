@@ -94,6 +94,18 @@ controller_interface::CallbackReturn BalanceController::on_configure(const rclcp
   servo_angle_sub_ = node->create_subscription<std_msgs::msg::Float64>(
       "servo_angle", 10, std::bind(&BalanceController::servoAngleCallback, this, std::placeholders::_1));
 
+  // Parameter callback for dynamic updates
+  auto param_callback = [this](const std::vector<rclcpp::Parameter> & parameters) {
+    for (const auto & param : parameters) {
+      if (param.get_name() == "march_velocity") {
+        march_velocity_ = param.as_double();
+        RCLCPP_INFO(get_node()->get_logger(), "Updated march_velocity to %f", march_velocity_);
+      }
+    }
+    return rcl_interfaces::msg::SetParametersResult();
+  };
+  param_callback_handle_ = node->add_on_set_parameters_callback(param_callback);
+
   RCLCPP_INFO(node->get_logger(), "BalanceController configured.");
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -113,6 +125,11 @@ controller_interface::CallbackReturn BalanceController::on_deactivate(const rclc
   // Zero commands on deactivate
   for (auto & cmd : command_interfaces_) {
     cmd.set_value(0.0);
+  }
+  // Remove parameter callback
+  if (param_callback_handle_) {
+    get_node()->remove_on_set_parameters_callback(param_callback_handle_.get());
+    param_callback_handle_.reset();
   }
   RCLCPP_INFO(get_node()->get_logger(), "BalanceController deactivated.");
   return controller_interface::CallbackReturn::SUCCESS;

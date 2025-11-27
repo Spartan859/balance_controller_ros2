@@ -89,6 +89,9 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr servo_angle_sub_;
 
+  // Parameter callback
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_callback_handle_;
+
   // Helpers
   void imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg);
   void servoAngleCallback(const std_msgs::msg::Float64::SharedPtr msg);
