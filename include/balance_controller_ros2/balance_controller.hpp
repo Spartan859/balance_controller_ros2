@@ -61,6 +61,7 @@ private:
   int turn_speed_divisor_{15};
   int angle_divisor_{15};
   int angular_velocity_divisor_{1};
+  double march_velocity_{0.0};
 
   // PID states
   PIDState angle_pid_{};      // outer (angle)

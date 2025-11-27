@@ -39,7 +39,8 @@ controller_interface::CallbackReturn BalanceController::on_init() {
     {"flywheelzero_divisor", rclcpp::ParameterValue(80)},
     {"turn_speed_divisor", rclcpp::ParameterValue(15)},
     {"angle_divisor", rclcpp::ParameterValue(15)},
-    {"angular_velocity_divisor", rclcpp::ParameterValue(1)}
+    {"angular_velocity_divisor", rclcpp::ParameterValue(1)},
+    {"march_velocity", rclcpp::ParameterValue(0.0)}
   };
   for (const auto & kv : default_params) {
     if (!node->has_parameter(kv.first)) {
@@ -83,6 +84,7 @@ controller_interface::CallbackReturn BalanceController::on_configure(const rclcp
   turn_speed_divisor_ = node->get_parameter("turn_speed_divisor").as_int();
   angle_divisor_ = node->get_parameter("angle_divisor").as_int();
   angular_velocity_divisor_ = node->get_parameter("angular_velocity_divisor").as_int();
+  march_velocity_ = node->get_parameter("march_velocity").as_double();
   machine_middle_angle_ = machine_middle_angle_init_;
 
   // Subscribers
@@ -259,7 +261,7 @@ controller_interface::return_type BalanceController::update(const rclcpp::Time &
 
     // Write commands: convert controller unit (turn/s) back to SI (rad/s)
     command_interfaces_[0].set_value(final_flywheel_speed * rad_per_turn);
-    command_interfaces_[1].set_value(0.0); // march velocity integration TBD
+    command_interfaces_[1].set_value(march_velocity_ * rad_per_turn);
     last_flywheel_command_ = final_flywheel_speed;
     last_final_flywheel_speed_ = final_flywheel_speed;
   }
