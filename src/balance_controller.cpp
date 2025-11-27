@@ -35,7 +35,11 @@ controller_interface::CallbackReturn BalanceController::on_init() {
     {"servo_center_deg", rclcpp::ParameterValue(-10.0)},
     {"servo_middle_range", rclcpp::ParameterValue(2.0)},
     {"log_enable", rclcpp::ParameterValue(true)},
-    {"log_hz", rclcpp::ParameterValue(10.0)}
+    {"log_hz", rclcpp::ParameterValue(10.0)},
+    {"flywheelzero_divisor", rclcpp::ParameterValue(80)},
+    {"turn_speed_divisor", rclcpp::ParameterValue(15)},
+    {"angle_divisor", rclcpp::ParameterValue(15)},
+    {"angular_velocity_divisor", rclcpp::ParameterValue(1)}
   };
   for (const auto & kv : default_params) {
     if (!node->has_parameter(kv.first)) {
@@ -75,6 +79,10 @@ controller_interface::CallbackReturn BalanceController::on_configure(const rclcp
   servo_middle_range_ = node->get_parameter("servo_middle_range").as_double();
   log_enable_ = node->get_parameter("log_enable").as_bool();
   log_hz_ = node->get_parameter("log_hz").as_double();
+  flywheelzero_divisor_ = node->get_parameter("flywheelzero_divisor").as_int();
+  turn_speed_divisor_ = node->get_parameter("turn_speed_divisor").as_int();
+  angle_divisor_ = node->get_parameter("angle_divisor").as_int();
+  angular_velocity_divisor_ = node->get_parameter("angular_velocity_divisor").as_int();
   machine_middle_angle_ = machine_middle_angle_init_;
 
   // Subscribers
@@ -193,19 +201,21 @@ controller_interface::return_type BalanceController::update(const rclcpp::Time &
   double drive_speed = drive_speed_si / rad_per_turn;                // turn/s
   last_drive_speed_ = drive_speed;
 
-  // Slow loop every ~160ms (assuming 500Hz -> 80 cycles, approximate with modulo 80)
+  // Configurable loop frequencies
   static double pwm_accel = 0.0;
-  bool slow_loop = (loop_counter_ % 80) == 0;
-  bool middle_loop = (loop_counter_ % 15) == 0;
+  bool flywheelzero_loop = (loop_counter_ % flywheelzero_divisor_) == 0;
+  bool turn_speed_loop = (loop_counter_ % turn_speed_divisor_) == 0;
+  bool angle_loop = (loop_counter_ % angle_divisor_) == 0;
+  bool angular_velocity_loop = (loop_counter_ % angular_velocity_divisor_) == 0;
 
-  if (slow_loop) {
+  if (flywheelzero_loop) {
     pwm_accel = computeFlywheelZeroPID(flywheel_speed);
   }
 
-  // Turn & speed bias every slow loop
+  // Turn & speed bias
   static double turn_bias = 0.0;
   static double speed_bias = 0.0;
-  if (middle_loop) {
+  if (turn_speed_loop) {
     double speed_bias_direction = 0.0;
     if (std::abs(last_servo_angle_ - servo_center_deg_) < servo_middle_range_) {
       speed_bias_direction = 0.0;
@@ -219,9 +229,9 @@ controller_interface::return_type BalanceController::update(const rclcpp::Time &
     last_speed_bias_ = speed_bias;
   }
 
-  // Middle loop every ~30ms (mod 15)
+  // Angle loop
   static double pwm_x = 0.0;
-  if (middle_loop) {
+  if (angle_loop) {
     double dynamic_zero = machine_middle_angle_ + turn_bias + speed_bias + pwm_accel;
     dynamic_zero = clamp(dynamic_zero,
                          machine_middle_angle_ - middle_angle_recitfy_limit_deg_,
@@ -230,27 +240,29 @@ controller_interface::return_type BalanceController::update(const rclcpp::Time &
     last_dynamic_zero_ = dynamic_zero;
   }
 
-  // Inner loop every cycle (angular velocity PID)
-  double final_flywheel_speed = computeAngularVelocityPID(last_roll_gyro_degps_, pwm_x);
-  // Clamp speed & acceleration
-  final_flywheel_speed = clamp(final_flywheel_speed, -flywheel_speed_limit_, flywheel_speed_limit_);
-  final_flywheel_speed = clamp(final_flywheel_speed,
-                               last_flywheel_command_ - flywheel_accel_limit_,
-                               last_flywheel_command_ + flywheel_accel_limit_);
+  // Angular velocity loop
+  if (angular_velocity_loop) {
+    double final_flywheel_speed = computeAngularVelocityPID(last_roll_gyro_degps_, pwm_x);
+    // Clamp speed & acceleration
+    final_flywheel_speed = clamp(final_flywheel_speed, -flywheel_speed_limit_, flywheel_speed_limit_);
+    final_flywheel_speed = clamp(final_flywheel_speed,
+                                 last_flywheel_command_ - flywheel_accel_limit_,
+                                 last_flywheel_command_ + flywheel_accel_limit_);
 
-  // Safety: angle deviation > 3 deg
-  if (std::abs(last_roll_deg_ - machine_middle_angle_) > 3.0) {
-    final_flywheel_speed = 0.0;
-    angle_pid_.integral = 0.0;
-    angle_vel_pid_.integral = 0.0;
-    flywheel_zero_pid_.integral = 0.0;
+    // Safety: angle deviation > 3 deg
+    if (std::abs(last_roll_deg_ - machine_middle_angle_) > 3.0) {
+      final_flywheel_speed = 0.0;
+      angle_pid_.integral = 0.0;
+      angle_vel_pid_.integral = 0.0;
+      flywheel_zero_pid_.integral = 0.0;
+    }
+
+    // Write commands: convert controller unit (turn/s) back to SI (rad/s)
+    command_interfaces_[0].set_value(final_flywheel_speed * rad_per_turn);
+    command_interfaces_[1].set_value(0.0); // march velocity integration TBD
+    last_flywheel_command_ = final_flywheel_speed;
+    last_final_flywheel_speed_ = final_flywheel_speed;
   }
-
-  // Write commands: convert controller unit (turn/s) back to SI (rad/s)
-  command_interfaces_[0].set_value(final_flywheel_speed * rad_per_turn);
-  command_interfaces_[1].set_value(0.0); // march velocity integration TBD
-  last_flywheel_command_ = final_flywheel_speed;
-  last_final_flywheel_speed_ = final_flywheel_speed;
 
   // Throttled real-time style log (controlled by params)
   if (log_enable_ && log_hz_ > 0.0) {

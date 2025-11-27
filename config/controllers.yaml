@@ -17,6 +17,11 @@ balance_controller:
     # Logging controls
     log_enable: true
     log_hz: 10.0
+    # Loop divisors (frequency controls)
+    flywheelzero_divisor: 80
+    turn_speed_divisor: 15
+    angle_divisor: 15
+    angular_velocity_divisor: 1
     angle_kp: 350.0
     angle_ki: 0.0
     angle_kd: 0.7

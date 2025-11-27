@@ -56,6 +56,11 @@ private:
   // Logging controls
   bool log_enable_{true};
   double log_hz_{10.0};
+  // Loop divisors (frequency controls)
+  int flywheelzero_divisor_{80};
+  int turn_speed_divisor_{15};
+  int angle_divisor_{15};
+  int angular_velocity_divisor_{1};
 
   // PID states
   PIDState angle_pid_{};      // outer (angle)
