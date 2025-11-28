@@ -96,13 +96,21 @@ controller_interface::CallbackReturn BalanceController::on_configure(const rclcp
 
   // Parameter callback for dynamic updates
   auto param_callback = [this](const std::vector<rclcpp::Parameter> & parameters) {
+    rcl_interfaces::msg::SetParametersResult result;
+    result.successful = true;
     for (const auto & param : parameters) {
       if (param.get_name() == "march_velocity") {
-        march_velocity_ = param.as_double();
-        RCLCPP_INFO(get_node()->get_logger(), "Updated march_velocity to %f", march_velocity_);
+        try {
+          march_velocity_ = param.as_double();
+          RCLCPP_INFO(get_node()->get_logger(), "Updated march_velocity to %f", march_velocity_);
+        } catch (const std::exception &e) {
+          result.successful = false;
+          result.reason = "Invalid march_velocity value: " + std::string(e.what());
+          break;  // Stop processing on error
+        }
       }
     }
-    return rcl_interfaces::msg::SetParametersResult();
+    return result;
   };
   param_callback_handle_ = node->add_on_set_parameters_callback(param_callback);
 
